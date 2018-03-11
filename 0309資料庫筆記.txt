@@ -1,0 +1,164 @@
+python manage.py migrate 目的是將資料庫做更新
+
+myproject/mysite/polls/models.py 更改code(覆蓋)
+
+myproject/mysite/mysite/settings.py 更改code將app引進來(第一航插入 'polls.apps.PollsConfig',)
+
+python manage.py makemigrations 基於當前的model創建新的遷移策略文件
+
+python manage.py migrate 執行遷移動作(跑出OK表示完成)
+
+python manage.py shell 用於試驗一下程式碼是不是可以正確執行
+
+from polls.models import Question, Choice  improt資料庫
+
+Question.objects.all()  檢查model變數 Question裡面的所有objects(物件)有哪些
+
+q = Question(question_text="What's new?", pub_date=timezone.now())  填寫第一筆資料(時間為系統時間)
+
+q.save() 將新的資料儲存
+
+q.id 目前擁有的id數
+
+q.pub_date 顯示現在的時間
+
+q.question_text = "What's up?" 將原先的question_text內容改成What's up?
+
+q.save() 再次將新的資料儲存
+
+Question.objects.all() 再show一次目前的objects有哪些
+
+Question.objects.all()[0] 抓出第一個物件
+
+myproject/mysite/polls/models.py 更改code
+在Question下面add
+def __str__(self):
+        return self.question_text(非覆蓋)
+
+myproject/mysite/polls/models.py 更改code
+在Choice下面add
+def __str__(self):
+        return self.choice_text(非覆蓋)
+
+myproject/mysite/polls/models.py 更改code
+在Question上方覆蓋原本的code
+import datetime
+
+from django.db import models
+from django.utils import timezone
+
+myproject/mysite/polls/models.py 更改code
+將以下文字"增加"至Question下方(非覆蓋)
+def was_published_recently(self):
+        return self.pub_date >= timezone.now() - datetime.timedelta(days=1)
+
+python manage.py shell 用於試驗一下程式碼是不是可以正確執行
+
+from polls.models import Question, Choice  improt資料庫
+
+Question.objects.all()  檢查model變數 Question裡面的所有objects(物件)有哪些(現有物件為What's up?)
+
+原本初創的物件不是叫What's up?
+而是<QuerySet [<Question: Question object (1)>]>
+是因為前面多了一個解釋
+myproject/mysite/polls/models.py 更改code
+在Question下面add
+def __str__(self):
+        return self.question_text
+將object (1)的名字改成這個object的question_text
+所以當輸入Question.object.all()的時候
+object (1)會變成What's up?
+總結:多了return self.question_text這個程式碼後做回傳的時候就會變成What's up?
+原本是寫object (1)現在變成What's up?
+What's up?就是指Question這個table裡的第一個text
+
+Question.objects.filter(id=1) 開始過濾第一筆資料是什麼(Waht's up?)
+
+Question.objects.filter(question_text__startswith='What') 找question_text中是由What開頭的有那些(Waht's up?)
+
+from django.utils import timezone import後 目的是看現在的時間
+
+current_year = timezone.now().year 今年(現正年分2018)
+
+Question.objects.get(pub_date__year=current_year) 搜尋有哪些東西的發表日發表年是今年 將它叫出來
+
+Question.objects.get(id=2) 搜尋第二筆資料 因目前只有一筆資料 所以出現error
+
+primary key:
+主鍵
+是用來識別資料表的唯一值。每個主鍵在資料表中，都是獨一無二的。資料庫管理系統可以藉由這些欄位，識別資料表內的每一筆記錄，並提供資料索引。主鍵可以直接使用一組不重複的資料，或是由系統自動產生，像員工資料表的員工編號，是用系統自動產生的流水號。由於主鍵是提供資料庫索引的重要欄位，故設計資料表時要慎選主鍵，避免造成資料庫系統產生資料錯誤等嚴重問題。
+
+q.was_published_recently() 看q這筆資料是否為一天內發文
+
+q.choice_set.all() 查看目前的choice有多少東西
+
+q.choice_set.create(choice_text='Not much', votes=0) 在question這個問題裡創造了第一個choice稱為Not much
+
+q.choice_set.create(choice_text='The sky', votes=0) 在question這個問題裡創造了第一個choice稱為The sky
+
+c = q.choice_set.create(choice_text='Just hacking again', votes=0) 在question這個問題裡創造了第一個choice稱為Just hacking again
+
+c.question 詢問c的question是什麼(What's up?)
+
+q.choice_set.all() 再次查看目前的choice有多少東西(<Choice: Not much>, <Choice: The sky>, <Choice: Just hacking again>)
+
+q.choice_set.count() 目前choice的數量
+
+Choice.objects.filter(question__pub_date__year=current_year) 過濾choice中有哪些的發表日為今年(三個choice皆是)
+
+c = q.choice_set.filter(choice_text__startswith='Just hacking') 尋找choice中哪個是Just hacking)
+
+c.delete() 將它刪除(剩下2個choice:<Choice: Not much>, <Choice: The sky>)
+
+Ctrl+Z跳開後輸入後
+python manage.py createsuperuser 開始創造這個資料庫的管理者
+
+使用者名稱保留原本名稱按enter
+email保留原本資料按enter
+輸入自己的密碼後再次輸入(重新更改密碼要打跟海一樣多的字)
+
+輸入python manage.py runserver至網站搜尋127.0.0.1:8000/admin即可跳出登入頁面
+
+myproject/mysite/polls/admin.py 更改code做些修正後至網頁F5刷新後Question的項目就會出現(內頁包含What's up?及其發文時間)
+
+myproject/mysite/polls/views.py 更改code將
+def detail(request, question_id):
+    return HttpResponse("You're looking at question %s." % question_id)
+
+def results(request, question_id):
+    response = "You're looking at the results of question %s."
+    return HttpResponse(response % question_id)
+
+def vote(request, question_id):
+    return HttpResponse("You're voting on question %s." % question_id)
+以上程式碼往下貼上(非覆蓋)
+
+myproject/mysite/polls/urls.py 更改code(覆蓋原先的程式碼)
+
+myproject/mysite/polls/views.py 更改code 僅更改index部分
+
+在mysite/polls資料夾裡開一個新資料夾叫templates後 再進到mysite/polls/templates資料夾裡開一個資料夾叫polls 最後在mysite/polls/templates/polls資料夾裡開一個新的檔案叫index.html
+
+
+myproject/mysite/polls/templates/polls/index.html 更改code(直接貼上)
+
+myproject/mysite/polls/views.py 更改code 將上方二行form開頭程式碼以覆蓋方式更改以下程式碼(其餘不動)
+from django.http import HttpResponse
+from django.template import loader
+
+from .models import Question
+以上完成後 再將def index(request):這段的程式碼以覆蓋方式更改為下方這些程式碼
+def index(request):
+    latest_question_list = Question.objects.order_by('-pub_date')[:5]
+    template = loader.get_template('polls/index.html')
+    context = {
+        'latest_question_list': latest_question_list,
+    }
+    return HttpResponse(template.render(context, request))
+
+至網頁搜尋127.0.0.1:8000/polls將出現What's up?(因前面寫了一個指令將templates丟進去)
+
+測試前面寫的url:1
+27.0.0.1:8000/polls/1/(將出現You're looking at question 1.)
+127.0.0.1:8000/polls/1/results/(將出現You're looking at results of question 1.
+127.0.0.1:8000/polls/1/vote/(將出現You're voting on question 1.)
